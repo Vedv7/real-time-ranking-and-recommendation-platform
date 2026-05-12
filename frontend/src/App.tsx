@@ -45,7 +45,14 @@ function App() {
           Inspect ranked recommendations, prediction scores, freshness boosts, and explanation metadata from the Spring Boot API.
         </p>
         <div className="controls">
-          <input value={userId} onChange={(event) => setUserId(event.target.value)} />
+          <label>
+            <span>User ID</span>
+            <input
+              value={userId}
+              onChange={(event) => setUserId(event.target.value)}
+              placeholder="Enter user ID"
+            />
+          </label>
           <button onClick={loadFeed}>Load feed</button>
         </div>
       </section>
