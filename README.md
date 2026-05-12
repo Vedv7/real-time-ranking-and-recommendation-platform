@@ -173,8 +173,3 @@ The training pipeline writes metrics to `ml-service/models/metrics.json`:
 - Add streaming aggregations with Kafka Streams or Flink.
 - Add integration tests with Testcontainers.
 
-## Resume Bullets
-
-- Built a real-time personalization platform with Spring Boot, Kafka, Redis, PostgreSQL, and FastAPI that ingests interaction events, updates online features, and serves ranked feeds with explainable scoring metadata.
-- Trained an XGBoost CTR model on 250K synthetic interaction events and deployed it behind a low-latency inference API with deterministic fallback behavior for local reliability.
-- Designed candidate generation, ranking, feature caching, recommendation logging, and Docker Compose infrastructure to mirror production feed-ranking architecture.
