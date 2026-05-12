@@ -41,6 +41,7 @@ recommendation:
   ml-service-url: ${ML_SERVICE_URL:http://localhost:8000}
   feed-cache-ttl-seconds: 60
   candidate-window-days: 30
+  demo-reset-enabled: ${DEMO_RESET_ENABLED:true}
 
 management:
   endpoints:

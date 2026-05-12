@@ -10,11 +10,14 @@ import com.veda.recommendation.service.DemoDataService;
 import com.veda.recommendation.service.FeatureStoreDiagnosticsService;
 import com.veda.recommendation.service.PlatformStatsService;
 import com.veda.recommendation.service.RecommendationLogService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.List;
@@ -27,19 +30,22 @@ public class PlatformController {
     private final DemoDataService demoDataService;
     private final RecommendationLogService recommendationLogService;
     private final PlatformStatsService platformStatsService;
+    private final boolean demoResetEnabled;
 
     public PlatformController(
             FeatureStoreDiagnosticsService featureStoreDiagnosticsService,
             MLInferenceClient mlInferenceClient,
             DemoDataService demoDataService,
             RecommendationLogService recommendationLogService,
-            PlatformStatsService platformStatsService
+            PlatformStatsService platformStatsService,
+            @Value("${recommendation.demo-reset-enabled:true}") boolean demoResetEnabled
     ) {
         this.featureStoreDiagnosticsService = featureStoreDiagnosticsService;
         this.mlInferenceClient = mlInferenceClient;
         this.demoDataService = demoDataService;
         this.recommendationLogService = recommendationLogService;
         this.platformStatsService = platformStatsService;
+        this.demoResetEnabled = demoResetEnabled;
     }
 
     @GetMapping("/feature-store")
@@ -72,6 +78,9 @@ public class PlatformController {
 
     @PostMapping("/demo/reset")
     public DemoResetResponse resetDemoData() {
+        if (!demoResetEnabled) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Demo reset is disabled");
+        }
         return demoDataService.reset();
     }
 

@@ -47,6 +47,8 @@ These endpoints expose online feature freshness, active ML model metadata, ranki
 
 `POST /api/platform/demo/reset` clears local runtime data, flushes Redis when available, and creates a demo user with varied ML/backend-heavy content and starter feature snapshots. It is intended for local demos, not production traffic.
 
+Set `DEMO_RESET_ENABLED=false` to disable the reset endpoint in shared or deployed environments.
+
 ## ML Service
 
 - `GET /health`
