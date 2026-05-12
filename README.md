@@ -263,6 +263,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
+After `git pull`, rebuild the backend image so new platform routes (replay, timeline, and so on) exist in the container: `docker compose up --build -d backend` (or run `docker compose up --build` again).
+
 If you have `make` installed, the same command is available as:
 
 ```bash

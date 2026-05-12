@@ -155,6 +155,36 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+/** Try multiple POST URLs (404 only) so dev proxy and mirror routes both work. */
+async function postJsonFirstOk(paths: string[], body: unknown): Promise<Response> {
+  const init: RequestInit = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+  const candidates: string[] = [];
+  for (const path of paths) {
+    candidates.push(`${API_BASE_URL}${path}`);
+    if (import.meta.env.DEV && API_BASE_URL.length > 0) {
+      candidates.push(path);
+    }
+  }
+  const seen = new Set<string>();
+  let last: Response | undefined;
+  for (const url of candidates) {
+    if (seen.has(url)) {
+      continue;
+    }
+    seen.add(url);
+    const res = await fetch(url, init);
+    last = res;
+    if (res.status !== 404) {
+      return res;
+    }
+  }
+  return last ?? new Response(null, { status: 599 });
+}
+
 const ACTIONS: Array<{ type: InteractionType; label: string; tone: "positive" | "negative" | "neutral" }> = [
   { type: "LIKE", label: "Like", tone: "positive" },
   { type: "SAVE", label: "Save", tone: "positive" },
@@ -406,17 +436,20 @@ function App() {
     setError(null);
     setIsReplaying(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/platform/replay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await postJsonFirstOk(
+        ["/api/platform/replay", "/api/events/replay"],
+        {
           userId: Number(userId),
           eventCount: 40,
           focusCategory,
-        }),
-      });
+        },
+      );
       if (!response.ok) {
-        setError(`Replay failed: ${response.status}`);
+        setError(
+          response.status === 404
+            ? "Replay failed: 404 (rebuild backend: docker compose up --build -d backend)"
+            : `Replay failed: ${response.status}`,
+        );
         return;
       }
       const replay: ReplaySimulationResponse = await response.json();

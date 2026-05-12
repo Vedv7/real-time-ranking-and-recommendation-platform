@@ -1,8 +1,11 @@
 package com.veda.recommendation.controller;
 
 import com.veda.recommendation.dto.InteractionEventRequest;
+import com.veda.recommendation.dto.ReplaySimulationRequest;
+import com.veda.recommendation.dto.ReplaySimulationResponse;
 import com.veda.recommendation.entity.InteractionEvent;
 import com.veda.recommendation.service.EventProducerService;
+import com.veda.recommendation.service.ReplaySimulationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,9 +22,14 @@ import java.util.List;
 @RequestMapping("/api/events")
 public class EventController {
     private final EventProducerService eventProducerService;
+    private final ReplaySimulationService replaySimulationService;
 
-    public EventController(EventProducerService eventProducerService) {
+    public EventController(
+            EventProducerService eventProducerService,
+            ReplaySimulationService replaySimulationService
+    ) {
         this.eventProducerService = eventProducerService;
+        this.replaySimulationService = replaySimulationService;
     }
 
     @PostMapping
@@ -33,5 +41,13 @@ public class EventController {
     @GetMapping("/user/{userId}")
     public List<InteractionEvent> eventsForUser(@PathVariable Long userId) {
         return eventProducerService.eventsForUser(userId);
+    }
+
+    /**
+     * Mirror of {@code POST /api/platform/replay} for clients on older builds and simpler discovery in Swagger.
+     */
+    @PostMapping("/replay")
+    public ReplaySimulationResponse replaySimulation(@RequestBody ReplaySimulationRequest request) {
+        return replaySimulationService.replay(request);
     }
 }

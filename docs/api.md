@@ -17,6 +17,7 @@ Swagger UI is available at `http://localhost:8080/swagger-ui/index.html` when th
 
 - `POST /api/events`
 - `GET /api/events/user/{userId}`
+- `POST /api/events/replay` (same body as `POST /api/platform/replay`; mirror for clients and Swagger discovery)
 
 Supported event types:
 
@@ -53,7 +54,7 @@ These endpoints expose online feature freshness, active ML model metadata, model
 
 Set `DEMO_RESET_ENABLED=false` to disable the reset endpoint in shared or deployed environments.
 
-`POST /api/platform/replay` accepts a `userId`, `eventCount`, and `focusCategory`, then synchronously replays synthetic behavior into the feature store. This is useful for local ranking demos and backtesting-style walkthroughs.
+`POST /api/platform/replay` accepts a `userId`, `eventCount`, and `focusCategory`, then synchronously replays synthetic behavior into the feature store. This is useful for local ranking demos and backtesting-style walkthroughs. The same behavior is available at `POST /api/events/replay`.
 
 ## ML Service
 
