@@ -38,6 +38,7 @@ The feed response includes request latency, candidate count, experiment bucket, 
 
 - `GET /api/platform/feature-store`
 - `GET /api/platform/model`
+- `GET /api/platform/stats`
 - `GET /api/platform/experiments`
 - `GET /api/platform/recommendation-logs/{userId}`
 - `POST /api/platform/demo/reset`

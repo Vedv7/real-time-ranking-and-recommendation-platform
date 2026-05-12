@@ -4,9 +4,11 @@ import com.veda.recommendation.client.MLInferenceClient;
 import com.veda.recommendation.dto.DemoResetResponse;
 import com.veda.recommendation.dto.FeatureStoreStatusDto;
 import com.veda.recommendation.dto.ModelMetadataDto;
+import com.veda.recommendation.dto.PlatformStatsDto;
 import com.veda.recommendation.dto.RecommendationLogDto;
 import com.veda.recommendation.service.DemoDataService;
 import com.veda.recommendation.service.FeatureStoreDiagnosticsService;
+import com.veda.recommendation.service.PlatformStatsService;
 import com.veda.recommendation.service.RecommendationLogService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,17 +26,20 @@ public class PlatformController {
     private final MLInferenceClient mlInferenceClient;
     private final DemoDataService demoDataService;
     private final RecommendationLogService recommendationLogService;
+    private final PlatformStatsService platformStatsService;
 
     public PlatformController(
             FeatureStoreDiagnosticsService featureStoreDiagnosticsService,
             MLInferenceClient mlInferenceClient,
             DemoDataService demoDataService,
-            RecommendationLogService recommendationLogService
+            RecommendationLogService recommendationLogService,
+            PlatformStatsService platformStatsService
     ) {
         this.featureStoreDiagnosticsService = featureStoreDiagnosticsService;
         this.mlInferenceClient = mlInferenceClient;
         this.demoDataService = demoDataService;
         this.recommendationLogService = recommendationLogService;
+        this.platformStatsService = platformStatsService;
     }
 
     @GetMapping("/feature-store")
@@ -45,6 +50,11 @@ public class PlatformController {
     @GetMapping("/model")
     public ModelMetadataDto modelMetadata() {
         return mlInferenceClient.metadata();
+    }
+
+    @GetMapping("/stats")
+    public PlatformStatsDto stats() {
+        return platformStatsService.snapshot();
     }
 
     @GetMapping("/experiments")

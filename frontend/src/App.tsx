@@ -56,6 +56,15 @@ type FeatureStoreStatus = {
   freshnessThresholdMinutes: number;
 };
 
+type PlatformStats = {
+  users: number;
+  contentItems: number;
+  interactionEvents: number;
+  userFeatures: number;
+  contentFeatures: number;
+  recommendationLogs: number;
+};
+
 type EventLogItem = {
   type: InteractionType;
   contentId: number;
@@ -103,6 +112,7 @@ function App() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [model, setModel] = useState<ModelMetadata | null>(null);
   const [featureStore, setFeatureStore] = useState<FeatureStoreStatus | null>(null);
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
   const [eventTrail, setEventTrail] = useState<EventLogItem[]>([]);
   const [recommendationLogs, setRecommendationLogs] = useState<RecommendationLog[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -177,15 +187,19 @@ function App() {
 
   async function refreshPlatform() {
     try {
-      const [modelResponse, featureResponse] = await Promise.all([
+      const [modelResponse, featureResponse, statsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/platform/model`),
         fetch(`${API_BASE_URL}/api/platform/feature-store`),
+        fetch(`${API_BASE_URL}/api/platform/stats`),
       ]);
       if (modelResponse.ok) {
         setModel(await modelResponse.json());
       }
       if (featureResponse.ok) {
         setFeatureStore(await featureResponse.json());
+      }
+      if (statsResponse.ok) {
+        setPlatformStats(await statsResponse.json());
       }
     } catch {
       // Diagnostics are optional for the demo surface.
@@ -358,6 +372,13 @@ function App() {
             <div className="kv"><span>User features</span><strong>{featureStore?.userFeatureCount ?? "-"}</strong></div>
             <div className="kv"><span>Content features</span><strong>{featureStore?.contentFeatureCount ?? "-"}</strong></div>
             <button className="wide secondary" onClick={refreshPlatform}>Refresh diagnostics</button>
+          </Panel>
+
+          <Panel title="System totals">
+            <div className="kv"><span>Users</span><strong>{platformStats?.users ?? "-"}</strong></div>
+            <div className="kv"><span>Content</span><strong>{platformStats?.contentItems ?? "-"}</strong></div>
+            <div className="kv"><span>Events</span><strong>{platformStats?.interactionEvents ?? "-"}</strong></div>
+            <div className="kv"><span>Decisions</span><strong>{platformStats?.recommendationLogs ?? "-"}</strong></div>
           </Panel>
 
           <Panel title="Recent events">
