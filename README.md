@@ -272,6 +272,7 @@ make up
 Open:
 
 - Backend API: `http://localhost:8080`
+- React demo: `http://localhost:5173`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 - ML service docs: `http://localhost:8000/docs`
 - Actuator health: `http://localhost:8080/actuator/health`
@@ -280,6 +281,19 @@ Open:
 - Grafana: `http://localhost:3000` with `admin` / `admin`
 
 On Windows, install requirements are documented in `docs/install.md`.
+
+## Demo Walkthrough
+
+Use this flow when recording a portfolio video or walking an interviewer through the system:
+
+1. Start Docker Compose and the Vite frontend.
+2. Open `http://localhost:5173`.
+3. Click `Reset demo data` to seed a clean technology/ML-focused storyline.
+4. Click `Refresh feed` and point out candidate count, ranking policy, model version, latency, and final score.
+5. Like or save the ML/backend items, then skip unrelated items.
+6. Watch the learning-mode panel update category signals.
+7. Refresh the feed and open the decision log panel to show persisted ranking decisions.
+8. Open Swagger, Prometheus, or Grafana to show this is backed by APIs and observability, not a static UI.
 
 Seed data:
 
