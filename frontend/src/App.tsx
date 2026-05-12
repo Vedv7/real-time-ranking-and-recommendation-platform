@@ -96,7 +96,64 @@ type RecommendationLog = {
   createdAt: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+type ReplaySimulationResponse = {
+  userId: number;
+  eventsReplayed: number;
+  focusCategory: string;
+  positiveEvents: number;
+  negativeEvents: number;
+  message: string;
+};
+
+type FeatureTimelineItem = {
+  timestamp: string;
+  contentId: number;
+  contentTitle: string;
+  category: string;
+  interactionType: InteractionType;
+  totalInteractions: number;
+  likeRate: number;
+  skipRate: number;
+  shareRate: number;
+  avgWatchTime: number;
+  preferredCategories: string[];
+};
+
+type ExperimentResult = {
+  experimentBucket: string;
+  rankingPolicy: string;
+  impressions: number;
+  avgPredictedCtr: number;
+  avgFinalScore: number;
+  avgLatencyMs: number;
+  topRankShare: number;
+};
+
+type ModelRegistryEntry = {
+  modelVersion: string;
+  stage: string;
+  active: boolean;
+  fallback: boolean;
+  loadedAt: string;
+  notes: string;
+};
+
+function resolveApiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) {
+      return trimmed.replace(/\/+$/, "");
+    }
+  }
+  // Dev default: same-origin `/api` so Vite proxy hits Spring Boot on :8080.
+  if (import.meta.env.DEV) {
+    return "";
+  }
+  return "http://localhost:8080";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const ACTIONS: Array<{ type: InteractionType; label: string; tone: "positive" | "negative" | "neutral" }> = [
   { type: "LIKE", label: "Like", tone: "positive" },
@@ -115,9 +172,14 @@ function App() {
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
   const [eventTrail, setEventTrail] = useState<EventLogItem[]>([]);
   const [recommendationLogs, setRecommendationLogs] = useState<RecommendationLog[]>([]);
+  const [featureTimeline, setFeatureTimeline] = useState<FeatureTimelineItem[]>([]);
+  const [experimentResults, setExperimentResults] = useState<ExperimentResult[]>([]);
+  const [modelRegistry, setModelRegistry] = useState<ModelRegistryEntry[]>([]);
+  const [replayResult, setReplayResult] = useState<ReplaySimulationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
 
   const topCategory = useMemo(() => {
     if (!feed?.items.length) {
@@ -167,6 +229,7 @@ function App() {
       }
       setFeed(await response.json());
       window.setTimeout(() => void loadRecommendationLogs(targetUserId), 150);
+      window.setTimeout(() => void loadFeatureTimeline(targetUserId), 150);
     } catch {
       setError("Could not reach backend. Start Docker Compose and try again.");
     } finally {
@@ -187,10 +250,12 @@ function App() {
 
   async function refreshPlatform() {
     try {
-      const [modelResponse, featureResponse, statsResponse] = await Promise.all([
+      const [modelResponse, featureResponse, statsResponse, experimentResponse, registryResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/platform/model`),
         fetch(`${API_BASE_URL}/api/platform/feature-store`),
         fetch(`${API_BASE_URL}/api/platform/stats`),
+        fetch(`${API_BASE_URL}/api/platform/experiments/results`),
+        fetch(`${API_BASE_URL}/api/platform/model-registry`),
       ]);
       if (modelResponse.ok) {
         setModel(await modelResponse.json());
@@ -200,6 +265,12 @@ function App() {
       }
       if (statsResponse.ok) {
         setPlatformStats(await statsResponse.json());
+      }
+      if (experimentResponse.ok) {
+        setExperimentResults(await experimentResponse.json());
+      }
+      if (registryResponse.ok) {
+        setModelRegistry(await registryResponse.json());
       }
     } catch {
       // Diagnostics are optional for the demo surface.
@@ -218,6 +289,21 @@ function App() {
       }
     } catch {
       // Recommendation logs are supporting evidence; feed loading owns visible errors.
+    }
+  }
+
+  async function loadFeatureTimeline(userOverride?: string) {
+    const targetUserId = userOverride ?? userId;
+    if (!targetUserId) {
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/platform/feature-timeline/${targetUserId}`);
+      if (response.ok) {
+        setFeatureTimeline(await response.json());
+      }
+    } catch {
+      // Timeline is optional supporting evidence for the demo.
     }
   }
 
@@ -253,6 +339,7 @@ function App() {
       window.setTimeout(() => {
         void loadFeed();
         void refreshPlatform();
+        void loadFeatureTimeline();
       }, 900);
     } catch {
       setError("Could not post event. Check that the backend is running.");
@@ -276,6 +363,7 @@ function App() {
       setUserId(String(user.id));
       setEventTrail([]);
       setRecommendationLogs([]);
+      setFeatureTimeline([]);
       window.setTimeout(() => void loadFeed(String(user.id)), 100);
     } catch {
       setError("Could not create demo user. Check that the backend is running.");
@@ -303,11 +391,51 @@ function App() {
         },
       ]);
       setRecommendationLogs([]);
+      setFeatureTimeline([]);
+      setReplayResult(null);
       await Promise.all([loadContent(), refreshPlatform(), loadFeed(String(reset.demoUserId))]);
     } catch {
       setError("Could not reset demo data. Check that the backend is running.");
     } finally {
       setIsResettingDemo(false);
+    }
+  }
+
+  async function runReplaySimulation() {
+    const focusCategory = topCategory === "Learning" ? "TECHNOLOGY" : topCategory;
+    setError(null);
+    setIsReplaying(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/platform/replay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: Number(userId),
+          eventCount: 40,
+          focusCategory,
+        }),
+      });
+      if (!response.ok) {
+        setError(`Replay failed: ${response.status}`);
+        return;
+      }
+      const replay: ReplaySimulationResponse = await response.json();
+      setReplayResult(replay);
+      setEventTrail((events) => [
+        {
+          type: "VIEW" as InteractionType,
+          contentId: 0,
+          title: `Replayed ${replay.eventsReplayed} ${replay.focusCategory} events`,
+          category: "SYSTEM",
+          at: new Date().toLocaleTimeString(),
+        },
+        ...events,
+      ].slice(0, 8));
+      await Promise.all([loadFeed(String(replay.userId)), refreshPlatform(), loadFeatureTimeline(String(replay.userId))]);
+    } catch {
+      setError("Could not run replay simulation. Check that the backend is running.");
+    } finally {
+      setIsReplaying(false);
     }
   }
 
@@ -334,6 +462,9 @@ function App() {
             <button className="secondary" onClick={createDemoUser}>New demo user</button>
             <button className="secondary danger" onClick={() => void resetDemoData()} disabled={isResettingDemo}>
               {isResettingDemo ? "Resetting..." : "Reset demo data"}
+            </button>
+            <button className="secondary" onClick={() => void runReplaySimulation()} disabled={isReplaying}>
+              {isReplaying ? "Replaying..." : "Replay 40 events"}
             </button>
           </div>
         </div>
@@ -381,6 +512,50 @@ function App() {
             <div className="kv"><span>Decisions</span><strong>{platformStats?.recommendationLogs ?? "-"}</strong></div>
           </Panel>
 
+          <Panel title="Replay simulator">
+            <p className="muted">Inject synthetic behavior for this user and watch features, logs, and ranking metadata move.</p>
+            {replayResult && (
+              <div className="compact-list">
+                <div><span>Focus</span><strong>{replayResult.focusCategory}</strong></div>
+                <div><span>Events</span><strong>{replayResult.eventsReplayed}</strong></div>
+                <div><span>Positive</span><strong>{replayResult.positiveEvents}</strong></div>
+                <div><span>Negative</span><strong>{replayResult.negativeEvents}</strong></div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Model registry">
+            {modelRegistry.length === 0 ? (
+              <p className="muted">Refresh diagnostics to load model registry entries.</p>
+            ) : (
+              <div className="log-list">
+                {modelRegistry.map((entry) => (
+                  <div className="log-row" key={`${entry.modelVersion}-${entry.stage}`}>
+                    <strong>{entry.active ? "ACTIVE" : "STANDBY"} · {entry.modelVersion}</strong>
+                    <span>{entry.stage} · fallback {entry.fallback ? "yes" : "no"}</span>
+                    <small>{entry.notes}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Experiment results">
+            {experimentResults.length === 0 ? (
+              <p className="muted">Load feeds to accumulate experiment decision data.</p>
+            ) : (
+              <div className="log-list">
+                {experimentResults.slice(0, 4).map((result) => (
+                  <div className="log-row" key={`${result.experimentBucket}-${result.rankingPolicy}`}>
+                    <strong>{result.rankingPolicy}</strong>
+                    <span>{result.impressions} impressions · {result.avgFinalScore.toFixed(3)} avg final</span>
+                    <small>{result.experimentBucket} · pCTR {result.avgPredictedCtr.toFixed(3)} · {result.avgLatencyMs.toFixed(0)} ms</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
           <Panel title="Recent events">
             {eventTrail.length === 0 ? (
               <p className="muted">No demo events yet. Click an action on a feed card.</p>
@@ -407,6 +582,24 @@ function App() {
                     <span>{category}</span>
                     <meter min={-2} max={4} value={score} />
                     <strong>{score > 0 ? `+${score.toFixed(1)}` : score.toFixed(1)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Feature timeline">
+            {featureTimeline.length === 0 ? (
+              <p className="muted">Interact or run replay to build a feature-change timeline.</p>
+            ) : (
+              <div className="timeline-list">
+                {featureTimeline.slice(-6).reverse().map((item) => (
+                  <div className="timeline-row" key={`${item.timestamp}-${item.contentId}-${item.interactionType}`}>
+                    <strong>{item.interactionType} · {item.category ?? "UNKNOWN"}</strong>
+                    <span>{item.contentTitle}</span>
+                    <small>
+                      total {item.totalInteractions} · like {item.likeRate.toFixed(2)} · skip {item.skipRate.toFixed(2)}
+                    </small>
                   </div>
                 ))}
               </div>

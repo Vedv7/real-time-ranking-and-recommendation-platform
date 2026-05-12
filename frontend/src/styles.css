@@ -272,13 +272,15 @@ button:disabled {
 }
 
 .event-list,
-.log-list {
+.log-list,
+.timeline-list {
   display: grid;
   gap: 10px;
 }
 
 .event,
-.log-row {
+.log-row,
+.timeline-row {
   display: grid;
   gap: 3px;
   padding: 12px;
@@ -288,18 +290,46 @@ button:disabled {
 }
 
 .event strong,
-.log-row strong {
+.log-row strong,
+.timeline-row strong {
   color: #38bdf8;
 }
 
 .event span,
-.log-row span {
+.log-row span,
+.timeline-row span {
   color: #e2e8f0;
 }
 
 .event small,
-.log-row small {
+.log-row small,
+.timeline-row small {
   color: #64748b;
+}
+
+.compact-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.compact-list div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+}
+
+.compact-list span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.compact-list strong {
+  color: #f8fafc;
 }
 
 .signal-list {
