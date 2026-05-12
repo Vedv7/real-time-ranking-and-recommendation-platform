@@ -60,6 +60,7 @@ type EventLogItem = {
   type: InteractionType;
   contentId: number;
   title: string;
+  category: string;
   at: string;
 };
 
@@ -118,6 +119,21 @@ function App() {
     }, {});
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Learning";
   }, [feed]);
+
+  const learnedSignals = useMemo(() => {
+    const scores = eventTrail.reduce<Record<string, number>>((acc, event) => {
+      if (event.category === "SYSTEM") {
+        return acc;
+      }
+      const weight = event.type === "SKIP" ? -1 : event.type === "VIEW" ? 0.4 : 1;
+      acc[event.category] = (acc[event.category] ?? 0) + weight;
+      return acc;
+    }, {});
+
+    return Object.entries(scores)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [eventTrail]);
 
   useEffect(() => {
     void refreshPlatform();
@@ -211,7 +227,13 @@ function App() {
         return;
       }
       setEventTrail((events) => [
-        { type, contentId: item.contentId, title: item.title, at: new Date().toLocaleTimeString() },
+        {
+          type,
+          contentId: item.contentId,
+          title: item.title,
+          category: item.category,
+          at: new Date().toLocaleTimeString(),
+        },
         ...events,
       ].slice(0, 8));
       window.setTimeout(() => {
@@ -262,6 +284,7 @@ function App() {
           type: "VIEW",
           contentId: 0,
           title: `${reset.contentCreated} fresh demo items seeded`,
+          category: "SYSTEM",
           at: new Date().toLocaleTimeString(),
         },
       ]);
@@ -347,6 +370,22 @@ function App() {
                     <strong>{event.type}</strong>
                     <span>{event.title}</span>
                     <small>{event.at}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Learning mode">
+            {learnedSignals.length === 0 ? (
+              <p className="muted">Interact with the feed to see local preference signals form in real time.</p>
+            ) : (
+              <div className="signal-list">
+                {learnedSignals.map(([category, score]) => (
+                  <div className="signal-row" key={category}>
+                    <span>{category}</span>
+                    <meter min={-2} max={4} value={score} />
+                    <strong>{score > 0 ? `+${score.toFixed(1)}` : score.toFixed(1)}</strong>
                   </div>
                 ))}
               </div>

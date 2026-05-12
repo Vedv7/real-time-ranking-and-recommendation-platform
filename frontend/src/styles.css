@@ -302,6 +302,28 @@ button:disabled {
   color: #64748b;
 }
 
+.signal-list {
+  display: grid;
+  gap: 12px;
+}
+
+.signal-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 44px;
+  gap: 10px;
+  align-items: center;
+  color: #e2e8f0;
+}
+
+.signal-row meter {
+  width: 100%;
+}
+
+.signal-row strong {
+  color: #38bdf8;
+  text-align: right;
+}
+
 .feed-stage {
   min-width: 0;
 }
