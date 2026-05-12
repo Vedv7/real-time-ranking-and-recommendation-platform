@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend compile
+    name: Backend tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,8 +24,8 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Compile backend
-        run: mvn -q -DskipTests compile
+      - name: Run backend tests
+        run: mvn -q test
 
   ml-service:
     name: ML service syntax
