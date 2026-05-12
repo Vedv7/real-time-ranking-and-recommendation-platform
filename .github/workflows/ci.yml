@@ -50,6 +50,9 @@ jobs:
       - name: Compile Python modules
         run: python -m compileall app training
 
+      - name: Run ML tests
+        run: PYTHONPATH=. pytest -q
+
   frontend:
     name: Frontend build
     runs-on: ubuntu-latest
