@@ -39,8 +39,12 @@ The feed response includes request latency, candidate count, experiment bucket, 
 - `GET /api/platform/feature-store`
 - `GET /api/platform/model`
 - `GET /api/platform/experiments`
+- `GET /api/platform/recommendation-logs/{userId}`
+- `POST /api/platform/demo/reset`
 
-These endpoints expose online feature freshness, active ML model metadata, and ranking experiment definitions.
+These endpoints expose online feature freshness, active ML model metadata, ranking experiment definitions, persisted ranking decisions, and a repeatable demo reset workflow.
+
+`POST /api/platform/demo/reset` clears local runtime data, flushes Redis when available, and creates a demo user with varied ML/backend-heavy content and starter feature snapshots. It is intended for local demos, not production traffic.
 
 ## ML Service
 
