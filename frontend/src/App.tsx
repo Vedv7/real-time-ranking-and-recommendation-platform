@@ -562,8 +562,11 @@ function App() {
               <p className="muted">Refresh diagnostics to load model registry entries.</p>
             ) : (
               <div className="log-list">
-                {modelRegistry.map((entry) => (
-                  <div className="log-row" key={`${entry.modelVersion}-${entry.stage}`}>
+                {modelRegistry.map((entry, index) => (
+                  <div
+                    className="log-row"
+                    key={`model-registry-${index}-${entry.modelVersion}-${entry.stage}-${entry.active}-${entry.loadedAt}`}
+                  >
                     <strong>{entry.active ? "ACTIVE" : "STANDBY"} · {entry.modelVersion}</strong>
                     <span>{entry.stage} · fallback {entry.fallback ? "yes" : "no"}</span>
                     <small>{entry.notes}</small>
