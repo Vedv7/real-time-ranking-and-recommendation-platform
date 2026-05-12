@@ -307,6 +307,12 @@ Run demo requests:
 bash scripts/demo_requests.sh
 ```
 
+Reset demo data from PowerShell:
+
+```powershell
+.\scripts\demo_reset.ps1
+```
+
 Run a smoke test against the local stack:
 
 ```bash
