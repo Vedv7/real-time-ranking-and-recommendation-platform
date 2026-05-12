@@ -20,6 +20,7 @@ import com.veda.recommendation.repository.InteractionEventRepository;
 import com.veda.recommendation.repository.RecommendationLogRepository;
 import com.veda.recommendation.repository.UserFeatureRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -61,6 +62,7 @@ public class RankingService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional
     public RankingResult rank(Long userId, List<Content> candidates, int limit, long requestLatencyMs) {
         long started = System.nanoTime();
         ExperimentAssignmentDto assignment = experimentAssignmentService.assign(userId);

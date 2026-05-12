@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import http.client
 import sys
 import time
 import urllib.error
@@ -29,7 +30,7 @@ def wait_for_service(name: str, url: str, attempts: int = 60) -> None:
             request_json("GET", url)
             print(f"{name} is healthy")
             return
-        except (urllib.error.URLError, TimeoutError):
+        except (http.client.RemoteDisconnected, urllib.error.URLError, TimeoutError):
             print(f"waiting for {name} ({attempt}/{attempts})")
             time.sleep(2)
     raise RuntimeError(f"{name} did not become healthy: {url}")
@@ -79,7 +80,7 @@ def main() -> None:
     assert feed["userId"] == user["id"]
     assert "rankingPolicy" in feed
     assert "modelVersion" in feed
-    assert "modelVersion" in diagnostics
+    assert "model_version" in diagnostics
     print("smoke test passed")
 
 

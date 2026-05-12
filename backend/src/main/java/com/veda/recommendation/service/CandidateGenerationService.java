@@ -10,6 +10,7 @@ import com.veda.recommendation.repository.UserFeatureRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ public class CandidateGenerationService {
         this.candidateWindowDays = candidateWindowDays;
     }
 
+    @Transactional(readOnly = true)
     public List<Content> generateCandidates(Long userId) {
         Set<Long> seenContentIds = interactionEventRepository.findInteractedContentIds(userId);
         Map<Long, Content> candidates = new LinkedHashMap<>();
