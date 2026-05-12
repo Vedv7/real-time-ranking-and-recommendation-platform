@@ -124,6 +124,11 @@ button:disabled {
   color: #e2e8f0;
 }
 
+.danger {
+  border-color: rgba(251, 113, 133, 0.34);
+  color: #fecdd3;
+}
+
 .hero-card,
 .panel,
 .metric,

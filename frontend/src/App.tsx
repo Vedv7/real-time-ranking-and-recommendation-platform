@@ -63,6 +63,14 @@ type EventLogItem = {
   at: string;
 };
 
+type DemoResetResponse = {
+  demoUserId: number;
+  usersCreated: number;
+  contentCreated: number;
+  eventsCreated: number;
+  message: string;
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 const ACTIONS: Array<{ type: InteractionType; label: string; tone: "positive" | "negative" | "neutral" }> = [
@@ -82,6 +90,7 @@ function App() {
   const [eventTrail, setEventTrail] = useState<EventLogItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
 
   const topCategory = useMemo(() => {
     if (!feed?.items.length) {
@@ -204,6 +213,33 @@ function App() {
     }
   }
 
+  async function resetDemoData() {
+    setError(null);
+    setIsResettingDemo(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/platform/demo/reset`, { method: "POST" });
+      if (!response.ok) {
+        setError(`Demo reset failed: ${response.status}`);
+        return;
+      }
+      const reset: DemoResetResponse = await response.json();
+      setUserId(String(reset.demoUserId));
+      setEventTrail([
+        {
+          type: "VIEW",
+          contentId: 0,
+          title: `${reset.contentCreated} fresh demo items seeded`,
+          at: new Date().toLocaleTimeString(),
+        },
+      ]);
+      await Promise.all([loadContent(), refreshPlatform(), loadFeed(String(reset.demoUserId))]);
+    } catch {
+      setError("Could not reset demo data. Check that the backend is running.");
+    } finally {
+      setIsResettingDemo(false);
+    }
+  }
+
   return (
     <main className="shell">
       <section className="hero">
@@ -225,6 +261,9 @@ function App() {
             </label>
             <button onClick={() => void loadFeed()} disabled={isLoading}>{isLoading ? "Ranking..." : "Refresh feed"}</button>
             <button className="secondary" onClick={createDemoUser}>New demo user</button>
+            <button className="secondary danger" onClick={() => void resetDemoData()} disabled={isResettingDemo}>
+              {isResettingDemo ? "Resetting..." : "Reset demo data"}
+            </button>
           </div>
         </div>
         <div className="hero-card">
@@ -249,7 +288,7 @@ function App() {
         <aside className="sidebar">
           <Panel title="Demo script">
             <ol className="steps">
-              <li>Load a feed for user 1.</li>
+              <li>Click Reset demo data for a clean storyline.</li>
               <li>Like or save tech/education content.</li>
               <li>Skip unrelated content.</li>
               <li>Refresh and watch ranking metadata change.</li>
