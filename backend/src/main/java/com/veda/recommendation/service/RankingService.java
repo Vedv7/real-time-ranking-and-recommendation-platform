@@ -40,6 +40,7 @@ public class RankingService {
     private final RecommendationLogRepository recommendationLogRepository;
     private final MLInferenceClient mlInferenceClient;
     private final ExperimentAssignmentService experimentAssignmentService;
+    private final RankingScoreCalculator rankingScoreCalculator;
     private final ObjectMapper objectMapper;
 
     public RankingService(
@@ -50,6 +51,7 @@ public class RankingService {
             RecommendationLogRepository recommendationLogRepository,
             MLInferenceClient mlInferenceClient,
             ExperimentAssignmentService experimentAssignmentService,
+            RankingScoreCalculator rankingScoreCalculator,
             ObjectMapper objectMapper
     ) {
         this.userFeatureRepository = userFeatureRepository;
@@ -59,6 +61,7 @@ public class RankingService {
         this.recommendationLogRepository = recommendationLogRepository;
         this.mlInferenceClient = mlInferenceClient;
         this.experimentAssignmentService = experimentAssignmentService;
+        this.rankingScoreCalculator = rankingScoreCalculator;
         this.objectMapper = objectMapper;
     }
 
@@ -93,7 +96,13 @@ public class RankingService {
             double predictedCtr = predictedCtrs.get(i);
             double explorationScore = explorationScore(content, userFeature, features);
             double diversityPenalty = diversityPenalty(content, categoryCounts);
-            double finalScore = score(assignment.rankingPolicy(), predictedCtr, features, explorationScore, diversityPenalty);
+            double finalScore = rankingScoreCalculator.score(
+                    assignment.rankingPolicy(),
+                    predictedCtr,
+                    features,
+                    explorationScore,
+                    diversityPenalty
+            );
             scored.add(new ScoredCandidate(content, features, predictedCtr, explorationScore, diversityPenalty, finalScore));
         }
 
@@ -110,25 +119,6 @@ public class RankingService {
             persistLog(userId, item, rank, Math.max(requestLatencyMs, rankingLatencyMs), assignment, modelMetadata);
         }
         return new RankingResult(ranked, assignment, modelMetadata, rankingLatencyMs);
-    }
-
-    private double score(
-            RankingPolicy policy,
-            double predictedCtr,
-            RankingFeatureDto features,
-            double explorationScore,
-            double diversityPenalty
-    ) {
-        double base = 0.65 * predictedCtr
-                + 0.15 * features.contentFreshnessScore()
-                + 0.10 * features.contentPopularityScore()
-                + 0.10 * features.categoryMatch();
-        return switch (policy) {
-            case FRESHNESS_BOOST -> base + 0.10 * features.contentFreshnessScore();
-            case DIVERSITY_BOOST -> base - diversityPenalty;
-            case EXPLORATION_BOOST -> base + 0.08 * explorationScore;
-            case CONTROL -> base;
-        };
     }
 
     private double explorationScore(Content content, UserFeature userFeature, RankingFeatureDto features) {
