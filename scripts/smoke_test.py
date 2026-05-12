@@ -30,7 +30,7 @@ def wait_for_service(name: str, url: str, attempts: int = 60) -> None:
             request_json("GET", url)
             print(f"{name} is healthy")
             return
-        except (http.client.RemoteDisconnected, urllib.error.URLError, TimeoutError):
+        except (ConnectionAbortedError, http.client.RemoteDisconnected, urllib.error.URLError, TimeoutError):
             print(f"waiting for {name} ({attempt}/{attempts})")
             time.sleep(2)
     raise RuntimeError(f"{name} did not become healthy: {url}")
