@@ -1,0 +1,47 @@
+[
+  {
+    "creatorId": 1,
+    "title": "How feed ranking systems work",
+    "category": "TECHNOLOGY",
+    "tags": ["ml", "ranking", "backend"],
+    "durationSeconds": 75,
+    "language": "en",
+    "qualityScore": 0.92
+  },
+  {
+    "creatorId": 2,
+    "title": "Training an XGBoost CTR model",
+    "category": "EDUCATION",
+    "tags": ["machine-learning", "xgboost"],
+    "durationSeconds": 120,
+    "language": "en",
+    "qualityScore": 0.88
+  },
+  {
+    "creatorId": 3,
+    "title": "Kafka event streams in 60 seconds",
+    "category": "TECHNOLOGY",
+    "tags": ["kafka", "events", "streaming"],
+    "durationSeconds": 60,
+    "language": "en",
+    "qualityScore": 0.84
+  },
+  {
+    "creatorId": 2,
+    "title": "Healthy high-protein lunch prep",
+    "category": "FOOD",
+    "tags": ["fitness", "meal-prep"],
+    "durationSeconds": 45,
+    "language": "en",
+    "qualityScore": 0.73
+  },
+  {
+    "creatorId": 1,
+    "title": "Building low-latency Redis caches",
+    "category": "TECHNOLOGY",
+    "tags": ["redis", "latency", "backend"],
+    "durationSeconds": 90,
+    "language": "en",
+    "qualityScore": 0.9
+  }
+]

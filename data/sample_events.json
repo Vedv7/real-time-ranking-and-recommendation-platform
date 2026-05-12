@@ -1,0 +1,42 @@
+[
+  {
+    "userId": 1,
+    "contentId": 1,
+    "interactionType": "VIEW",
+    "watchTimeSeconds": 62,
+    "deviceType": "ios",
+    "sessionId": "seed-session-1"
+  },
+  {
+    "userId": 1,
+    "contentId": 1,
+    "interactionType": "LIKE",
+    "watchTimeSeconds": 70,
+    "deviceType": "ios",
+    "sessionId": "seed-session-1"
+  },
+  {
+    "userId": 1,
+    "contentId": 2,
+    "interactionType": "CLICK",
+    "watchTimeSeconds": 95,
+    "deviceType": "web",
+    "sessionId": "seed-session-2"
+  },
+  {
+    "userId": 2,
+    "contentId": 3,
+    "interactionType": "SHARE",
+    "watchTimeSeconds": 58,
+    "deviceType": "android",
+    "sessionId": "seed-session-3"
+  },
+  {
+    "userId": 3,
+    "contentId": 4,
+    "interactionType": "SKIP",
+    "watchTimeSeconds": 4,
+    "deviceType": "web",
+    "sessionId": "seed-session-4"
+  }
+]

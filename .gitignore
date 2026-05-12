@@ -1,0 +1,33 @@
+# Java / Maven
+backend/target/
+*.class
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+ml-service/training/data/
+ml-service/models/*.joblib
+ml-service/models/*.pkl
+
+# Generated ML reports
+ml-service/models/feature_importance.png
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Runtime and local config
+.env
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker
+postgres-data/
