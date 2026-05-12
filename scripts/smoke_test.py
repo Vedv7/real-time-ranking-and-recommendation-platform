@@ -40,6 +40,10 @@ def main() -> None:
     wait_for_service("backend", f"{BASE_URL}/actuator/health")
     wait_for_service("ml-service", f"{ML_URL}/health")
 
+    demo_reset = request_json("POST", f"{BASE_URL}/api/platform/demo/reset")
+    assert demo_reset["contentCreated"] >= 10
+    assert demo_reset["demoUserId"] > 0
+
     username = f"smoke_user_{int(time.time())}"
     user = request_json(
         "POST",
@@ -76,11 +80,13 @@ def main() -> None:
     time.sleep(3)
     feed = request_json("GET", f"{BASE_URL}/api/feed/{user['id']}?limit=5")
     diagnostics = request_json("GET", f"{BASE_URL}/api/platform/model")
+    logs = request_json("GET", f"{BASE_URL}/api/platform/recommendation-logs/{user['id']}")
 
     assert feed["userId"] == user["id"]
     assert "rankingPolicy" in feed
     assert "modelVersion" in feed
     assert "model_version" in diagnostics
+    assert len(logs) > 0
     print("smoke test passed")
 
 
