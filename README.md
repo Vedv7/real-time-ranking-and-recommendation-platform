@@ -4,7 +4,7 @@ A production-style real-time personalization platform inspired by large-scale fe
 
 ## Why This Project Matters
 
-Modern consumer platforms depend on low-latency ranking systems that combine backend engineering, streaming data, feature computation, machine learning inference, caching, experimentation, observability, and offline evaluation. This project demonstrates those skills in a locally runnable stack that is realistic enough for serious backend/MLE portfolio review.
+Modern consumer platforms depend on low-latency ranking systems that combine backend engineering, streaming data, feature computation, machine learning inference, caching, experimentation, observability, and offline evaluation. This project packages those concepts into a locally runnable reference platform for studying and experimenting with production-style feed ranking architecture.
 
 ## Architecture
 
