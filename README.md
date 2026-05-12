@@ -1,6 +1,6 @@
-# Real-Time Ranking and Recommendation Platform
+# RankStream
 
-A production-style real-time personalization platform inspired by large-scale feed ranking, ads ranking, and recommendation systems. Users interact with content through events such as views, likes, skips, clicks, saves, shares, and watch time. The platform ingests those events, updates online features, generates candidates, calls an ML inference service, applies ranking policies, logs recommendation decisions, and serves an explainable personalized feed through Spring Boot APIs.
+RankStream is a production-style real-time personalization platform inspired by large-scale feed ranking, ads ranking, and recommendation systems. Users interact with content through events such as views, likes, skips, clicks, saves, shares, and watch time. The platform ingests those events, updates online features, generates candidates, calls an ML inference service, applies ranking policies, logs recommendation decisions, and serves an explainable personalized feed through Spring Boot APIs.
 
 ## Why This Project Matters
 
@@ -263,6 +263,12 @@ cp .env.example .env
 docker compose up --build
 ```
 
+If you have `make` installed, the same command is available as:
+
+```bash
+make up
+```
+
 Open:
 
 - Backend API: `http://localhost:8080`
@@ -285,6 +291,12 @@ Run demo requests:
 
 ```bash
 bash scripts/demo_requests.sh
+```
+
+Run a smoke test against the local stack:
+
+```bash
+python scripts/smoke_test.py
 ```
 
 Train the ranking model:
@@ -407,6 +419,15 @@ The training pipeline writes metrics to `ml-service/models/metrics.json`:
 - `docs/system_design.md`: system goals, caching, reliability, and ranking path.
 - `docs/scaling_plan.md`: how the local design maps to larger deployments.
 - `docs/install.md`: local tool installation and development setup.
+
+## Continuous Integration
+
+GitHub Actions runs separate checks for:
+
+- backend compilation with Java 17 and Maven
+- Python ML service syntax validation
+- React frontend production build
+- Docker Compose configuration validation
 
 ## Future Improvements
 
