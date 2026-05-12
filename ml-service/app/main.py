@@ -5,7 +5,7 @@ import time
 from fastapi import FastAPI
 
 from app.model import RankingModel
-from app.schemas import PredictionRequest, PredictionResponse
+from app.schemas import ModelMetadata, PredictionRequest, PredictionResponse
 
 app = FastAPI(
     title="Ranking ML Inference Service",
@@ -17,7 +17,12 @@ model = RankingModel()
 
 @app.get("/health")
 def health() -> dict[str, object]:
-    return {"status": "ok", "using_fallback": model.using_fallback}
+    return {"status": "ok", **model.metadata().model_dump()}
+
+
+@app.get("/metadata", response_model=ModelMetadata)
+def metadata() -> ModelMetadata:
+    return model.metadata()
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -30,4 +35,11 @@ def predict(request: PredictionRequest) -> PredictionResponse:
         f"items={len(request.features)} latency_ms={latency_ms} using_fallback={model.using_fallback}",
         flush=True,
     )
-    return PredictionResponse(predictions=predictions)
+    metadata = model.metadata()
+    return PredictionResponse(
+        predictions=predictions,
+        model_version=metadata.model_version,
+        model_stage=metadata.model_stage,
+        using_fallback=metadata.using_fallback,
+        loaded_at=metadata.loaded_at,
+    )

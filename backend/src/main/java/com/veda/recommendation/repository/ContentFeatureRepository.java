@@ -4,8 +4,11 @@ import com.veda.recommendation.entity.ContentFeature;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ContentFeatureRepository extends JpaRepository<ContentFeature, Long> {
     List<ContentFeature> findAllByOrderByPopularityScoreDesc(Pageable pageable);
+
+    long countByUpdatedAtBefore(LocalDateTime threshold);
 }

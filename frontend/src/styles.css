@@ -94,6 +94,11 @@ button {
   margin: 16px 0;
 }
 
+.policy {
+  color: #93c5fd;
+  font-size: 13px;
+}
+
 .error {
   color: #fecaca;
 }

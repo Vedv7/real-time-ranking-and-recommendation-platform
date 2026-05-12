@@ -1,7 +1,6 @@
 package com.veda.recommendation.service;
 
 import com.veda.recommendation.dto.FeedResponse;
-import com.veda.recommendation.dto.RankedContentDto;
 import com.veda.recommendation.entity.Content;
 import com.veda.recommendation.exception.ResourceNotFoundException;
 import com.veda.recommendation.repository.UserRepository;
@@ -45,18 +44,30 @@ public class FeedService {
         String cacheKey = "feed:" + userId + ":" + limit;
         FeedResponse cached = cached(cacheKey);
         if (cached != null) {
+            metricsService.recordCacheHit("feed");
             return cached;
         }
+        metricsService.recordCacheMiss("feed");
 
         long started = System.nanoTime();
         List<Content> candidates = candidateGenerationService.generateCandidates(userId);
-        List<RankedContentDto> items = rankingService.rank(userId, candidates, limit, 0);
+        RankingService.RankingResult rankingResult = rankingService.rank(userId, candidates, limit, 0);
         long latencyMs = Duration.ofNanos(System.nanoTime() - started).toMillis();
-        FeedResponse response = new FeedResponse(userId, LocalDateTime.now(), latencyMs, items);
+        FeedResponse response = new FeedResponse(
+                userId,
+                LocalDateTime.now(),
+                latencyMs,
+                candidates.size(),
+                rankingResult.assignment().experimentName(),
+                rankingResult.assignment().bucket(),
+                rankingResult.assignment().rankingPolicy().name(),
+                rankingResult.modelMetadata().modelVersion(),
+                rankingResult.items()
+        );
 
         cache(cacheKey, response);
-        metricsService.recordInferenceLatency(userId, candidates.size(), latencyMs);
-        metricsService.recordFeedRequest(userId, limit, items.size(), latencyMs);
+        metricsService.recordInferenceLatency(userId, candidates.size(), rankingResult.rankingLatencyMs(), rankingResult.modelMetadata().modelVersion());
+        metricsService.recordFeedRequest(userId, limit, rankingResult.items().size(), latencyMs, rankingResult.assignment().rankingPolicy().name(), rankingResult.modelMetadata().modelVersion());
         return response;
     }
 

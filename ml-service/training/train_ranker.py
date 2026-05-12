@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 import joblib
 import matplotlib.pyplot as plt
@@ -59,6 +60,7 @@ def main() -> None:
     predictions = (probabilities >= 0.5).astype(int)
     fpr, tpr, _ = roc_curve(y_test, probabilities)
     metrics = {
+        "model_version": model_version(),
         "auc": round(float(auc(fpr, tpr)), 4),
         "precision": round(float(precision_score(y_test, predictions)), 4),
         "recall": round(float(recall_score(y_test, predictions)), 4),
@@ -70,6 +72,21 @@ def main() -> None:
 
     joblib.dump(model, MODEL_DIR / "ranking_model.joblib")
     (MODEL_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    (MODEL_DIR / "model_metadata.json").write_text(
+        json.dumps(
+            {
+                "model_version": metrics["model_version"],
+                "model_stage": "production",
+                "trained_at": datetime.now(timezone.utc).isoformat(),
+                "training_rows": metrics["training_rows"],
+                "test_rows": metrics["test_rows"],
+                "primary_metric": "auc",
+                "primary_metric_value": metrics["auc"],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     plot_feature_importance(model)
 
     print(json.dumps(metrics, indent=2))
@@ -81,6 +98,10 @@ def plot_feature_importance(model: XGBClassifier) -> None:
     importance.plot(kind="barh", title="Ranking Model Feature Importance")
     plt.tight_layout()
     plt.savefig(MODEL_DIR / "feature_importance.png", dpi=160)
+
+
+def model_version() -> str:
+    return "ranking-xgb-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
 
 
 if __name__ == "__main__":

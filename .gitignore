@@ -13,6 +13,7 @@ ml-service/models/*.pkl
 
 # Generated ML reports
 ml-service/models/feature_importance.png
+ml-service/models/backtest_report.json
 
 # Node / frontend
 node_modules/

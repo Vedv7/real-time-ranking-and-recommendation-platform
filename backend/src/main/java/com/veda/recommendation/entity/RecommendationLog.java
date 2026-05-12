@@ -22,6 +22,9 @@ public class RecommendationLog {
     private Double predictedCtr;
     private Double finalScore;
     private Integer rankPosition;
+    private String modelVersion;
+    private String rankingPolicy;
+    private String experimentBucket;
 
     @Column(columnDefinition = "TEXT")
     private String featureSnapshotJson;
@@ -82,6 +85,30 @@ public class RecommendationLog {
 
     public void setRankPosition(Integer rankPosition) {
         this.rankPosition = rankPosition;
+    }
+
+    public String getModelVersion() {
+        return modelVersion;
+    }
+
+    public void setModelVersion(String modelVersion) {
+        this.modelVersion = modelVersion;
+    }
+
+    public String getRankingPolicy() {
+        return rankingPolicy;
+    }
+
+    public void setRankingPolicy(String rankingPolicy) {
+        this.rankingPolicy = rankingPolicy;
+    }
+
+    public String getExperimentBucket() {
+        return experimentBucket;
+    }
+
+    public void setExperimentBucket(String experimentBucket) {
+        this.experimentBucket = experimentBucket;
     }
 
     public String getFeatureSnapshotJson() {

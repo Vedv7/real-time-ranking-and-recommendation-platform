@@ -1,0 +1,86 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(rate(recommendation_feed_requests_total[1m])) by (policy)",
+          "legendFormat": "{{policy}}"
+        }
+      ],
+      "title": "Feed Requests By Policy",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(recommendation_feed_latency_seconds_bucket[5m])) by (le, policy))",
+          "legendFormat": "p95 {{policy}}"
+        }
+      ],
+      "title": "Feed Latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(recommendation_cache_hit_total[1m])) by (cache) / (sum(rate(recommendation_cache_hit_total[1m])) by (cache) + sum(rate(recommendation_cache_miss_total[1m])) by (cache))",
+          "legendFormat": "{{cache}}"
+        }
+      ],
+      "title": "Cache Hit Ratio",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ranking", "recommendations", "ml-serving"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "title": "Real-Time Ranking Platform",
+  "uid": "ranking-platform",
+  "version": 1
+}

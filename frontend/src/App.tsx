@@ -9,6 +9,8 @@ type RankedItem = {
   predictedCtr: number;
   finalScore: number;
   rankPosition: number;
+  rankingPolicy: string;
+  modelVersion: string;
   explanation: string[];
 };
 
@@ -16,6 +18,10 @@ type FeedResponse = {
   userId: number;
   generatedAt: string;
   latencyMs: number;
+  candidateCount: number;
+  experimentBucket: string;
+  rankingPolicy: string;
+  modelVersion: string;
   items: RankedItem[];
 };
 
@@ -62,8 +68,11 @@ function App() {
         <section>
           <div className="summary">
             <span>User {feed.userId}</span>
+            <span>{feed.candidateCount} candidates</span>
             <span>{feed.items.length} items</span>
             <span>{feed.latencyMs} ms</span>
+            <span>{feed.experimentBucket}</span>
+            <span>{feed.modelVersion}</span>
           </div>
           <div className="grid">
             {feed.items.map((item) => (
@@ -71,6 +80,7 @@ function App() {
                 <div className="rank">#{item.rankPosition}</div>
                 <h2>{item.title}</h2>
                 <p>{item.category}</p>
+                <p className="policy">{item.rankingPolicy} · {item.modelVersion}</p>
                 <div className="scores">
                   <span>CTR {item.predictedCtr}</span>
                   <span>Score {item.finalScore}</span>

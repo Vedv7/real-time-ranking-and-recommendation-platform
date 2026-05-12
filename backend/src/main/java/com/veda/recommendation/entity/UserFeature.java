@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -28,6 +30,13 @@ public class UserFeature {
     private Double shareRate = 0.0;
     private Long totalInteractions = 0L;
     private LocalDateTime lastActiveAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    void touch() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Long getUserId() {
         return userId;
@@ -91,5 +100,13 @@ public class UserFeature {
 
     public void setLastActiveAt(LocalDateTime lastActiveAt) {
         this.lastActiveAt = lastActiveAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

@@ -3,6 +3,8 @@ package com.veda.recommendation.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.veda.recommendation.client.MLInferenceClient;
+import com.veda.recommendation.dto.ExperimentAssignmentDto;
+import com.veda.recommendation.dto.ModelMetadataDto;
 import com.veda.recommendation.dto.RankedContentDto;
 import com.veda.recommendation.dto.RankingFeatureDto;
 import com.veda.recommendation.entity.Content;
@@ -10,6 +12,8 @@ import com.veda.recommendation.entity.ContentFeature;
 import com.veda.recommendation.entity.InteractionEvent;
 import com.veda.recommendation.entity.RecommendationLog;
 import com.veda.recommendation.entity.UserFeature;
+import com.veda.recommendation.enums.ContentCategory;
+import com.veda.recommendation.enums.RankingPolicy;
 import com.veda.recommendation.repository.ContentFeatureRepository;
 import com.veda.recommendation.repository.ContentRepository;
 import com.veda.recommendation.repository.InteractionEventRepository;
@@ -34,6 +38,7 @@ public class RankingService {
     private final ContentRepository contentRepository;
     private final RecommendationLogRepository recommendationLogRepository;
     private final MLInferenceClient mlInferenceClient;
+    private final ExperimentAssignmentService experimentAssignmentService;
     private final ObjectMapper objectMapper;
 
     public RankingService(
@@ -43,6 +48,7 @@ public class RankingService {
             ContentRepository contentRepository,
             RecommendationLogRepository recommendationLogRepository,
             MLInferenceClient mlInferenceClient,
+            ExperimentAssignmentService experimentAssignmentService,
             ObjectMapper objectMapper
     ) {
         this.userFeatureRepository = userFeatureRepository;
@@ -51,11 +57,13 @@ public class RankingService {
         this.contentRepository = contentRepository;
         this.recommendationLogRepository = recommendationLogRepository;
         this.mlInferenceClient = mlInferenceClient;
+        this.experimentAssignmentService = experimentAssignmentService;
         this.objectMapper = objectMapper;
     }
 
-    public List<RankedContentDto> rank(Long userId, List<Content> candidates, int limit, long requestLatencyMs) {
+    public RankingResult rank(Long userId, List<Content> candidates, int limit, long requestLatencyMs) {
         long started = System.nanoTime();
+        ExperimentAssignmentDto assignment = experimentAssignmentService.assign(userId);
         UserFeature userFeature = userFeatureRepository.findById(userId).orElseGet(() -> {
             UserFeature feature = new UserFeature();
             feature.setUserId(userId);
@@ -69,18 +77,22 @@ public class RankingService {
         List<RankingFeatureDto> featureVectors = candidates.stream()
                 .map(content -> buildFeatures(userId, userFeature, content, contentFeatures.get(content.getId())))
                 .toList();
-        List<Double> predictedCtrs = mlInferenceClient.predict(featureVectors);
+        MLInferenceClient.PredictionBatch predictionBatch = mlInferenceClient.predict(featureVectors);
+        List<Double> predictedCtrs = predictionBatch.predictedCtrs();
+        ModelMetadataDto modelMetadata = predictionBatch.metadata();
         long rankingLatencyMs = Duration.ofNanos(System.nanoTime() - started).toMillis();
 
         List<ScoredCandidate> scored = new ArrayList<>();
+        Map<ContentCategory, Long> categoryCounts = candidates.stream()
+                .collect(Collectors.groupingBy(Content::getCategory, Collectors.counting()));
         for (int i = 0; i < candidates.size(); i++) {
+            Content content = candidates.get(i);
             RankingFeatureDto features = featureVectors.get(i);
             double predictedCtr = predictedCtrs.get(i);
-            double finalScore = 0.65 * predictedCtr
-                    + 0.15 * features.contentFreshnessScore()
-                    + 0.10 * features.contentPopularityScore()
-                    + 0.10 * features.categoryMatch();
-            scored.add(new ScoredCandidate(candidates.get(i), features, predictedCtr, finalScore));
+            double explorationScore = explorationScore(content, userFeature, features);
+            double diversityPenalty = diversityPenalty(content, categoryCounts);
+            double finalScore = score(assignment.rankingPolicy(), predictedCtr, features, explorationScore, diversityPenalty);
+            scored.add(new ScoredCandidate(content, features, predictedCtr, explorationScore, diversityPenalty, finalScore));
         }
 
         List<ScoredCandidate> top = scored.stream()
@@ -92,10 +104,39 @@ public class RankingService {
         for (int i = 0; i < top.size(); i++) {
             ScoredCandidate item = top.get(i);
             int rank = i + 1;
-            ranked.add(toDto(item, rank));
-            persistLog(userId, item, rank, Math.max(requestLatencyMs, rankingLatencyMs));
+            ranked.add(toDto(item, rank, assignment.rankingPolicy(), modelMetadata.modelVersion()));
+            persistLog(userId, item, rank, Math.max(requestLatencyMs, rankingLatencyMs), assignment, modelMetadata);
         }
-        return ranked;
+        return new RankingResult(ranked, assignment, modelMetadata, rankingLatencyMs);
+    }
+
+    private double score(
+            RankingPolicy policy,
+            double predictedCtr,
+            RankingFeatureDto features,
+            double explorationScore,
+            double diversityPenalty
+    ) {
+        double base = 0.65 * predictedCtr
+                + 0.15 * features.contentFreshnessScore()
+                + 0.10 * features.contentPopularityScore()
+                + 0.10 * features.categoryMatch();
+        return switch (policy) {
+            case FRESHNESS_BOOST -> base + 0.10 * features.contentFreshnessScore();
+            case DIVERSITY_BOOST -> base - diversityPenalty;
+            case EXPLORATION_BOOST -> base + 0.08 * explorationScore;
+            case CONTROL -> base;
+        };
+    }
+
+    private double explorationScore(Content content, UserFeature userFeature, RankingFeatureDto features) {
+        double novelty = userFeature.getPreferredCategories().contains(content.getCategory()) ? 0.0 : 1.0;
+        return Math.min(1.0, 0.6 * novelty + 0.4 * features.contentFreshnessScore());
+    }
+
+    private double diversityPenalty(Content content, Map<ContentCategory, Long> categoryCounts) {
+        long categoryCount = categoryCounts.getOrDefault(content.getCategory(), 0L);
+        return Math.min(0.15, Math.max(0, categoryCount - 10) * 0.01);
     }
 
     private RankingFeatureDto buildFeatures(Long userId, UserFeature userFeature, Content content, ContentFeature contentFeature) {
@@ -140,7 +181,7 @@ public class RankingService {
         return Math.min(1.0, sameCreator / 10.0);
     }
 
-    private RankedContentDto toDto(ScoredCandidate item, int rankPosition) {
+    private RankedContentDto toDto(ScoredCandidate item, int rankPosition, RankingPolicy policy, String modelVersion) {
         RankingFeatureDto features = item.features();
         return new RankedContentDto(
                 item.content().getId(),
@@ -150,13 +191,17 @@ public class RankingService {
                 round(features.contentPopularityScore()),
                 round(features.categoryMatch()),
                 round(features.contentFreshnessScore()),
+                round(item.explorationScore()),
+                round(item.diversityPenalty()),
                 round(item.finalScore()),
                 rankPosition,
-                explanation(features, item.predictedCtr())
+                policy.name(),
+                modelVersion,
+                explanation(features, item.predictedCtr(), item.explorationScore(), item.diversityPenalty())
         );
     }
 
-    private List<String> explanation(RankingFeatureDto features, double predictedCtr) {
+    private List<String> explanation(RankingFeatureDto features, double predictedCtr, double explorationScore, double diversityPenalty) {
         List<String> reasons = new ArrayList<>();
         if (features.categoryMatch() == 1) {
             reasons.add("High match with user interests");
@@ -170,19 +215,35 @@ public class RankingService {
         if (features.userSkipRate() < 0.2 && predictedCtr > 0.45) {
             reasons.add("Low skip probability");
         }
+        if (explorationScore > 0.6) {
+            reasons.add("Exploration candidate to learn new interests");
+        }
+        if (diversityPenalty > 0.0) {
+            reasons.add("Diversity re-ranker reduced duplicate category exposure");
+        }
         if (reasons.isEmpty()) {
             reasons.add("Balanced exploration candidate");
         }
         return reasons;
     }
 
-    private void persistLog(Long userId, ScoredCandidate item, int rankPosition, long latencyMs) {
+    private void persistLog(
+            Long userId,
+            ScoredCandidate item,
+            int rankPosition,
+            long latencyMs,
+            ExperimentAssignmentDto assignment,
+            ModelMetadataDto modelMetadata
+    ) {
         RecommendationLog log = new RecommendationLog();
         log.setUserId(userId);
         log.setContentId(item.content().getId());
         log.setPredictedCtr(item.predictedCtr());
         log.setFinalScore(item.finalScore());
         log.setRankPosition(rankPosition);
+        log.setModelVersion(modelMetadata.modelVersion());
+        log.setRankingPolicy(assignment.rankingPolicy().name());
+        log.setExperimentBucket(assignment.bucket());
         log.setFeatureSnapshotJson(featureSnapshot(item.features()));
         log.setLatencyMs(latencyMs);
         recommendationLogRepository.save(log);
@@ -200,6 +261,21 @@ public class RankingService {
         return Math.round(value * 10000.0) / 10000.0;
     }
 
-    private record ScoredCandidate(Content content, RankingFeatureDto features, double predictedCtr, double finalScore) {
+    private record ScoredCandidate(
+            Content content,
+            RankingFeatureDto features,
+            double predictedCtr,
+            double explorationScore,
+            double diversityPenalty,
+            double finalScore
+    ) {
+    }
+
+    public record RankingResult(
+            List<RankedContentDto> items,
+            ExperimentAssignmentDto assignment,
+            ModelMetadataDto modelMetadata,
+            long rankingLatencyMs
+    ) {
     }
 }

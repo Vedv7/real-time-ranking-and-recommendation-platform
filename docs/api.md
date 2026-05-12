@@ -32,11 +32,20 @@ Supported event types:
 
 - `GET /api/feed/{userId}?limit=20`
 
-The feed response includes request latency, ranked items, predicted CTR, popularity score, user-interest score, freshness score, final score, rank position, and explanations.
+The feed response includes request latency, candidate count, experiment bucket, ranking policy, model version, ranked items, predicted CTR, popularity score, user-interest score, freshness score, exploration score, diversity penalty, final score, rank position, and explanations.
+
+## Platform Diagnostics
+
+- `GET /api/platform/feature-store`
+- `GET /api/platform/model`
+- `GET /api/platform/experiments`
+
+These endpoints expose online feature freshness, active ML model metadata, and ranking experiment definitions.
 
 ## ML Service
 
 - `GET /health`
+- `GET /metadata`
 - `POST /predict`
 
-`POST /predict` accepts a list of ranking feature vectors and returns predicted CTR probabilities.
+`POST /predict` accepts a list of ranking feature vectors and returns predicted CTR probabilities plus model metadata.

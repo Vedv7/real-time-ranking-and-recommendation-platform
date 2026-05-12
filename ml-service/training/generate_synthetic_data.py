@@ -46,7 +46,7 @@ def main() -> None:
     category_match = rng.binomial(1, 0.34, n_events)
     creator_affinity = rng.beta(1.4, 8.0, n_events)
 
-    frame = pd.concat([event_users.drop(columns=["user_id"]), event_content.drop(columns=["content_id"])], axis=1)
+    frame = pd.concat([event_users, event_content], axis=1)
     frame["category_match"] = category_match
     frame["creator_affinity"] = creator_affinity
 

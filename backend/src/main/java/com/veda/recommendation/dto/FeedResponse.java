@@ -7,6 +7,11 @@ public record FeedResponse(
         Long userId,
         LocalDateTime generatedAt,
         long latencyMs,
+        int candidateCount,
+        String experimentName,
+        String experimentBucket,
+        String rankingPolicy,
+        String modelVersion,
         List<RankedContentDto> items
 ) {
 }

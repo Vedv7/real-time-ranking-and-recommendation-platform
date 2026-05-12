@@ -12,8 +12,12 @@ public record RankedContentDto(
         double contentPopularityScore,
         double userInterestMatchScore,
         double freshnessScore,
+        double explorationScore,
+        double diversityPenalty,
         double finalScore,
         int rankPosition,
+        String rankingPolicy,
+        String modelVersion,
         List<String> explanation
 ) {
 }

@@ -25,3 +25,14 @@ class Prediction(BaseModel):
 
 class PredictionResponse(BaseModel):
     predictions: list[Prediction]
+    model_version: str
+    model_stage: str
+    using_fallback: bool
+    loaded_at: str
+
+
+class ModelMetadata(BaseModel):
+    model_version: str
+    model_stage: str
+    using_fallback: bool
+    loaded_at: str
