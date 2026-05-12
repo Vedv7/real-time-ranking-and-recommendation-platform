@@ -271,12 +271,14 @@ button:disabled {
   margin-top: 16px;
 }
 
-.event-list {
+.event-list,
+.log-list {
   display: grid;
   gap: 10px;
 }
 
-.event {
+.event,
+.log-row {
   display: grid;
   gap: 3px;
   padding: 12px;
@@ -285,15 +287,18 @@ button:disabled {
   border-radius: 12px;
 }
 
-.event strong {
+.event strong,
+.log-row strong {
   color: #38bdf8;
 }
 
-.event span {
+.event span,
+.log-row span {
   color: #e2e8f0;
 }
 
-.event small {
+.event small,
+.log-row small {
   color: #64748b;
 }
 

@@ -71,6 +71,21 @@ type DemoResetResponse = {
   message: string;
 };
 
+type RecommendationLog = {
+  id: number;
+  userId: number;
+  contentId: number;
+  title: string;
+  predictedCtr: number;
+  finalScore: number;
+  rankPosition: number;
+  modelVersion: string;
+  rankingPolicy: string;
+  experimentBucket: string;
+  latencyMs: number;
+  createdAt: string;
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 const ACTIONS: Array<{ type: InteractionType; label: string; tone: "positive" | "negative" | "neutral" }> = [
@@ -88,6 +103,7 @@ function App() {
   const [model, setModel] = useState<ModelMetadata | null>(null);
   const [featureStore, setFeatureStore] = useState<FeatureStoreStatus | null>(null);
   const [eventTrail, setEventTrail] = useState<EventLogItem[]>([]);
+  const [recommendationLogs, setRecommendationLogs] = useState<RecommendationLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
@@ -124,6 +140,7 @@ function App() {
         return;
       }
       setFeed(await response.json());
+      window.setTimeout(() => void loadRecommendationLogs(targetUserId), 150);
     } catch {
       setError("Could not reach backend. Start Docker Compose and try again.");
     } finally {
@@ -156,6 +173,21 @@ function App() {
       }
     } catch {
       // Diagnostics are optional for the demo surface.
+    }
+  }
+
+  async function loadRecommendationLogs(userOverride?: string) {
+    const targetUserId = userOverride ?? userId;
+    if (!targetUserId) {
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/platform/recommendation-logs/${targetUserId}`);
+      if (response.ok) {
+        setRecommendationLogs(await response.json());
+      }
+    } catch {
+      // Recommendation logs are supporting evidence; feed loading owns visible errors.
     }
   }
 
@@ -207,6 +239,7 @@ function App() {
       const user = await response.json();
       setUserId(String(user.id));
       setEventTrail([]);
+      setRecommendationLogs([]);
       window.setTimeout(() => void loadFeed(String(user.id)), 100);
     } catch {
       setError("Could not create demo user. Check that the backend is running.");
@@ -232,6 +265,7 @@ function App() {
           at: new Date().toLocaleTimeString(),
         },
       ]);
+      setRecommendationLogs([]);
       await Promise.all([loadContent(), refreshPlatform(), loadFeed(String(reset.demoUserId))]);
     } catch {
       setError("Could not reset demo data. Check that the backend is running.");
@@ -321,6 +355,22 @@ function App() {
 
           <Panel title="Catalog snapshot">
             <p className="muted">{content.length} content items available through the backend.</p>
+          </Panel>
+
+          <Panel title="Decision log">
+            {recommendationLogs.length === 0 ? (
+              <p className="muted">Load a feed to write recommendation logs.</p>
+            ) : (
+              <div className="log-list">
+                {recommendationLogs.slice(0, 5).map((log) => (
+                  <div className="log-row" key={log.id}>
+                    <strong>#{log.rankPosition} {log.title}</strong>
+                    <span>{log.rankingPolicy} · {log.finalScore.toFixed(3)} final · {log.latencyMs} ms</span>
+                    <small>{new Date(log.createdAt).toLocaleTimeString()}</small>
+                  </div>
+                ))}
+              </div>
+            )}
           </Panel>
         </aside>
 
